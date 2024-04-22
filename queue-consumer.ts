@@ -1,15 +1,10 @@
 import * as amqp from "amqplib/callback_api";
-const socketIoClient = require("socket.io-client");
-import { Socket } from "socket.io-client";
 
 const USERNAME = "katalyst"
 const PASSWORD = encodeURIComponent("guest12345");
 const HOSTNAME = "44.217.29.217";
 const PORT = 5672
 const RABBITMQ_DATA = "Payment";
-const WEBSOCKET_SERVER_URL = "http://184.72.246.90:4000/";
-
-let socketIO: Socket;
 
 async function sendDatatoAPI(data: any) {
   //API PAYMENT
@@ -29,7 +24,7 @@ async function sendDatatoAPI(data: any) {
     body: requestData.body,
   });
 
-  console.log('API DATA RESPONSE: ',response.status);
+  console.log('API DATA RESPONSE: ',response);
 }
 
 async function connect() {
@@ -44,20 +39,10 @@ async function connect() {
 
         channel.assertQueue(RABBITMQ_DATA, {durable:true, arguments:{"x-queue-type":"quorum"}});
 
-        socketIO = socketIoClient(WEBSOCKET_SERVER_URL, {
-          transports: ['websocket'], // Forzar el uso de WebSocket
-          upgrade: false // Deshabilitar actualizaciones automáticas (no se necesita en Node.js)
-        });
-
-        socketIO.on("connect", () => {
-          console.log("Connected to WebSocket Server");
-        });
-
         channel.consume(RABBITMQ_DATA, async (data: amqp.Message | null) => {
           if (data?.content !== undefined) {
             const parsedContent = JSON.parse(data.content.toString());
             console.log("order:processed:", parsedContent);
-            socketIO.emit("order:processed", parsedContent);
             await sendDatatoAPI(parsedContent);
             channel.ack(data);
           }

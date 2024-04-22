@@ -37,14 +37,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var amqp = require("amqplib/callback_api");
-var socketIoClient = require("socket.io-client");
 var USERNAME = "katalyst";
 var PASSWORD = encodeURIComponent("guest12345");
 var HOSTNAME = "44.217.29.217";
 var PORT = 5672;
 var RABBITMQ_DATA = "Payment";
-var WEBSOCKET_SERVER_URL = "http://184.72.246.90:4000/";
-var socketIO;
 function sendDatatoAPI(data) {
     return __awaiter(this, void 0, void 0, function () {
         var apiUrl, requestData, response;
@@ -65,7 +62,7 @@ function sendDatatoAPI(data) {
                         })];
                 case 1:
                     response = _a.sent();
-                    console.log('API DATA RESPONSE: ', response.status);
+                    console.log('API DATA RESPONSE: ', response);
                     return [2 /*return*/];
             }
         });
@@ -86,13 +83,6 @@ function connect() {
                         if (errChanel)
                             throw new Error(errChanel);
                         channel.assertQueue(RABBITMQ_DATA, { durable: true, arguments: { "x-queue-type": "quorum" } });
-                        socketIO = socketIoClient(WEBSOCKET_SERVER_URL, {
-                            transports: ['websocket'], // Forzar el uso de WebSocket
-                            upgrade: false // Deshabilitar actualizaciones automáticas (no se necesita en Node.js)
-                        });
-                        socketIO.on("connect", function () {
-                            console.log("Connected to WebSocket Server");
-                        });
                         channel.consume(RABBITMQ_DATA, function (data) { return __awaiter(_this, void 0, void 0, function () {
                             var parsedContent;
                             return __generator(this, function (_a) {
@@ -101,7 +91,6 @@ function connect() {
                                         if (!((data === null || data === void 0 ? void 0 : data.content) !== undefined)) return [3 /*break*/, 2];
                                         parsedContent = JSON.parse(data.content.toString());
                                         console.log("order:processed:", parsedContent);
-                                        socketIO.emit("order:processed", parsedContent);
                                         return [4 /*yield*/, sendDatatoAPI(parsedContent)];
                                     case 1:
                                         _a.sent();
